@@ -19,6 +19,12 @@ package com.digitalpebble.behemoth.solr;
 
 import java.util.Random;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -61,15 +67,38 @@ public class LucidWorksIndexerJob extends Configured implements Tool {
     public int run(String[] args) throws Exception {
 
         final FileSystem fs = FileSystem.get(getConf());
-
-        if (args.length != 2) {
-            String syntax = "com.digitalpebble.solr.LucidWorksIndexerJob in solrURL";
-            System.err.println(syntax);
-            return -1;
+        
+        // Following behemoth style of printing help messages
+        Options options = new Options();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLineParser parser = new GnuParser();
+        
+        options.addOption("help", false, "print this message");
+        options.addOption("i", "input", true, "input behemoth corpus");
+        options.addOption("o", "output", true, "Solr URL");
+        
+        Path inputPath = null;
+        String solrURL = null;
+        
+        // parse the command line arguments
+        CommandLine cmdLine = null;
+        try {
+            cmdLine = parser.parse(options, args);
+            String input = cmdLine.getOptionValue("i");
+            String solrUrl = cmdLine.getOptionValue("o");
+            if (cmdLine.hasOption("help")) {
+                formatter.printHelp("LucidWorksIndexerJob", options);
+                return 0;
+            }
+            if (input == null | solrUrl == null) {
+                formatter.printHelp("LucidWorksIndexerJob", options);
+                return -1;
+            }
+            inputPath = new Path(input);
+            solrURL = new String(solrUrl);
+        } catch (ParseException e) {
+            formatter.printHelp("LucidWorksIndexerJob", options);
         }
-
-        Path inputPath = new Path(args[0]);
-        String solrURL = args[1];
 
         JobConf job = new JobConf(getConf());
 

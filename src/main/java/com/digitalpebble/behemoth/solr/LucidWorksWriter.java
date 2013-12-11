@@ -50,6 +50,7 @@ public class LucidWorksWriter {
   private boolean includeMetadata = false;
   protected boolean includeAnnotations = false;
   protected boolean includeAllAnnotations = false;
+  protected boolean dynamicFields = false;
   protected ModifiableSolrParams params = null;
 
   public LucidWorksWriter(Progressable progress) {
@@ -85,6 +86,7 @@ public class LucidWorksWriter {
     }
     includeMetadata = job.getBoolean("lw.metadata", false);
     includeAnnotations = job.getBoolean("lw.annotations", false);
+    dynamicFields = job.getBoolean("dynamic.fields", false);
     populateSolrFieldMappingsFromBehemothAnnotationsTypesAndFeatures(job);
   }
 
@@ -182,7 +184,13 @@ public class LucidWorksWriter {
     MapWritable metadata = doc.getMetadata();
     if (includeMetadata && metadata != null) {
       for (Entry<Writable, Writable> entry : metadata.entrySet()) {
-        inputDoc.addField(entry.getKey().toString(), entry.getValue().toString());
+        if (dynamicFields){
+          String key = "attr_" + entry.getKey().toString();
+          inputDoc.addField(key, entry.getValue().toString());
+        }
+        else {
+          inputDoc.addField(entry.getKey().toString(), entry.getValue().toString()); 
+        }
       }
     }
     // iterate on the annotations of interest and
